@@ -32,6 +32,7 @@ import com.google.firebase.firestore.SetOptions;
 import com.google.firebase.firestore.Transaction;
 import com.google.firebase.firestore.WriteBatch;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -42,7 +43,7 @@ public class MainActivity extends AppCompatActivity {
     private static final String KEY_TITLE = "title";
     private static final String KEY_DESC = "description";
 
-    private EditText editTextTitle, editTextDescription, editTextPriority;
+    private EditText editTextTitle, editTextDescription, editTextPriority, editTextTags;
     private TextView textViewData;
 
     private ListenerRegistration noteListener;
@@ -61,9 +62,10 @@ public class MainActivity extends AppCompatActivity {
         editTextDescription = findViewById(R.id.edit_text_desc);
         textViewData = findViewById(R.id.text_view_data);
         editTextPriority = findViewById(R.id.edit_text_priority);
+        editTextTags = findViewById(R.id.edit_text_tags);
 
         executableBatchedWrite();
-        executeTransaction();
+//        executeTransaction();
     }
 
     private void    executeTransaction() {
@@ -219,7 +221,12 @@ public class MainActivity extends AppCompatActivity {
                 editTextPriority.setText("0");
     }
         int priority = Integer.parseInt(editTextPriority.getText().toString());
-        Note note = new Note(title, description, priority);
+
+        String tagInput = editTextTags.getText().toString();
+        String[] tagArray = tagInput.split("\\s*, \\s*");
+        List<String> tags = Arrays.asList(tagArray);
+
+        Note note = new Note(title, description, priority, tags);
 
         notebookRef.add(note);
         editTextTitle.setText("");
