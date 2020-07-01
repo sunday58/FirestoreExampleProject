@@ -17,6 +17,7 @@ import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 import com.google.android.gms.tasks.Tasks;
 import com.google.firebase.firestore.CollectionReference;
+import com.google.firebase.firestore.DocumentChange;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.EventListener;
@@ -28,6 +29,8 @@ import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.QuerySnapshot;
 import com.google.firebase.firestore.SetOptions;
+import com.google.firebase.firestore.Transaction;
+import com.google.firebase.firestore.WriteBatch;
 
 import java.util.HashMap;
 import java.util.List;
@@ -47,6 +50,8 @@ public class MainActivity extends AppCompatActivity {
     private DocumentReference noteRef = db.document("Notebook/My first Note");
     private CollectionReference notebookRef = db.collection("Notebook");
 
+    private DocumentSnapshot lastResult;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -56,41 +61,122 @@ public class MainActivity extends AppCompatActivity {
         editTextDescription = findViewById(R.id.edit_text_desc);
         textViewData = findViewById(R.id.text_view_data);
         editTextPriority = findViewById(R.id.edit_text_priority);
+
+        executableBatchedWrite();
+        executeTransaction();
+    }
+
+    private void    executeTransaction() {
+        db.runTransaction(new Transaction.Function<Long>() {
+            @Nullable
+            @Override
+            public Long apply(@NonNull Transaction transaction) throws FirebaseFirestoreException {
+                DocumentReference exampleNoteRef = notebookRef.document("Example Note");
+                DocumentSnapshot exampleNoteSnapshot = transaction.get(exampleNoteRef);
+                long newPriority = exampleNoteSnapshot.getLong("priority") + 1;
+                transaction.update(exampleNoteRef, "priority", newPriority);
+                return newPriority;
+            }
+        }).addOnSuccessListener(new OnSuccessListener<Long>() {
+            @Override
+            public void onSuccess(Long result) {
+                Toast.makeText(MainActivity.this, "New Priority: " + result,
+                        Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private void executableBatchedWrite() {
+
+        //updating and deleting documents using batch
+//        WriteBatch  batch = db.batch();
+//        DocumentReference doc1 = notebookRef.document("New Note");
+//        batch.set(doc1, new Note("New Note", "New Note", 1));
+//
+//        DocumentReference doc2 = notebookRef.document("VT0uTG9P8jNH5u6P2HFY");
+//        batch.update(doc2, "title", "updated Note" );
+//
+//        DocumentReference doc3 = notebookRef.document(
+//                "FpmyvZCZ4yQQH3e0APSr");
+//        batch.delete(doc3);
+//
+//        batch.commit().addOnFailureListener(new OnFailureListener() {
+//            @Override
+//            public void onFailure(@NonNull Exception e) {
+//                textViewData.setText(e.toString());
+//            }
+//        });
+
+        //for transaction
+
     }
 
     @Override
     protected void onStart() {
         super.onStart();
 
-        notebookRef.addSnapshotListener(this, new EventListener<QuerySnapshot>() {
-            @Override
-            public void onEvent(@Nullable QuerySnapshot queryDocumentSnapshots, @Nullable FirebaseFirestoreException e) {
-                if (e != null)
-                    return;
+        //modifying individual data's at a given index
+//        notebookRef.addSnapshotListener(this, new EventListener<QuerySnapshot>() {
+//            @Override
+//            public void onEvent(@Nullable QuerySnapshot queryDocumentSnapshots, @Nullable FirebaseFirestoreException e) {
+//                if (e != null){
+//                    return;
+//                }
+//                if (queryDocumentSnapshots != null) {
+//                    for (DocumentChange dc : queryDocumentSnapshots.getDocumentChanges()) {
+//                        DocumentSnapshot documentSnapshot = dc.getDocument();
+//                        String id = documentSnapshot.getId();
+//                        int oldIndex = dc.getOldIndex();
+//                        int newIndex = dc.getNewIndex();
+//
+//                        switch (dc.getType()){
+//                            case ADDED:
+//                                textViewData.append("\nAdded: " + id +
+//                                "\nOld Index: " + oldIndex + "New Index: " + newIndex);
+//                                break;
+//                            case MODIFIED:
+//                                textViewData.append("\nModified: " + id +
+//                                        "\nOld Index: " + oldIndex + "New Index: " + newIndex);
+//                                break;
+//                            case REMOVED:
+//                                textViewData.append("\nRemoved: " + id +
+//                                        "\nOld Index: " + oldIndex + "New Index: " + newIndex);
+//                                break;
+//                        }
+//                    }
+//                }
+//            }
+//        });
 
-                StringBuilder data = new StringBuilder();
-                if (queryDocumentSnapshots != null) {
-                    for (QueryDocumentSnapshot documentSnapshot : queryDocumentSnapshots){
-                        Note note = documentSnapshot.toObject(Note.class);
-                        note.setDocumentId(documentSnapshot.getId());
-
-                        String documentId = note.getDocumentId();
-                        String title = note.getTitle();
-                        String description = note.getDescription();
-                        int priority = note.getPriority();
-
-                        data.append("ID: ").append(documentId)
-                                .append("\nTitle: ").append(title)
-                                .append("\ndescription: ")
-                                .append(description)
-                                .append("\npriority: ")
-                                .append(priority)
-                                .append("\n\n");
-                    }
-                }
-                textViewData.setText(data.toString());
-            }
-        });
+//        notebookRef.addSnapshotListener(this, new EventListener<QuerySnapshot>() {
+//            @Override
+//            public void onEvent(@Nullable QuerySnapshot queryDocumentSnapshots, @Nullable FirebaseFirestoreException e) {
+//                if (e != null)
+//                    return;
+//
+//                StringBuilder data = new StringBuilder();
+//                if (queryDocumentSnapshots != null) {
+//                    for (QueryDocumentSnapshot documentSnapshot : queryDocumentSnapshots){
+//                        Note note = documentSnapshot.toObject(Note.class);
+//                        note.setDocumentId(documentSnapshot.getId());
+//
+//                        String documentId = note.getDocumentId();
+//                        String title = note.getTitle();
+//                        String description = note.getDescription();
+//                        int priority = note.getPriority();
+//
+//                        data.append("ID: ").append(documentId)
+//                                .append("\nTitle: ").append(title)
+//                                .append("\ndescription: ")
+//                                .append(description)
+//                                .append("\npriority: ")
+//                                .append(priority)
+//                                .append("\n\n");
+//                    }
+//                }
+//                textViewData.setText(data.toString());
+//            }
+//        });
 
 
 
@@ -164,43 +250,91 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void loadNotes(View view) {
+        Query query;
+        if (lastResult == null){
+            query = notebookRef.orderBy("priority")
+                    .limit(3);
+        }else {
+            query = notebookRef.orderBy("priority")
+                    .startAfter(lastResult)
+                    .limit(3);
+        }
 
-        Task task1 = notebookRef.whereLessThan("priority", 2)
-                .orderBy("priority")
-                .get();
-        Task task2 = notebookRef.whereGreaterThan("priority", 2)
-                .orderBy("priority")
-                .get();
+        //for pagination
+//        notebookRef.orderBy("priority")
+//                .startAt(3)
+               query.get()
+                .addOnSuccessListener(new OnSuccessListener<QuerySnapshot>() {
+                    @Override
+                    public void onSuccess(QuerySnapshot queryDocumentSnapshots) {
+                        StringBuilder data = new StringBuilder();
 
-        Task<List<QuerySnapshot>> allTasks = Tasks.whenAllSuccess(task1,task2);
-        allTasks.addOnSuccessListener(new OnSuccessListener<List<QuerySnapshot>>() {
-            @Override
-            public void onSuccess(List<QuerySnapshot> querySnapshots) {
-                StringBuilder data = new StringBuilder();
+                    for (QueryDocumentSnapshot documentSnapshot: queryDocumentSnapshots) {
+                        Note note = documentSnapshot.toObject(Note.class);
+                        note.setDocumentId(documentSnapshot.getId());
 
-                for (QuerySnapshot queryDocumentSnapshots: querySnapshots){
+                        String documentId = note.getDocumentId();
+                        String title = note.getTitle();
+                        String description = note.getDescription();
+                        int priority = note.getPriority();
 
-                        for (QueryDocumentSnapshot documentSnapshot : queryDocumentSnapshots){
-                            Note note = documentSnapshot.toObject(Note.class);
-                            note.setDocumentId(documentSnapshot.getId());
-
-                            String documentId = note.getDocumentId();
-                            String title = note.getTitle();
-                            String description = note.getDescription();
-                            int priority = note.getPriority();
-
-                            data.append("ID: ").append(documentId)
+                        data.append("ID: ").append(documentId)
                                     .append("\nTitle: ").append(title)
                                     .append("\ndescription: ")
                                     .append(description)
                                     .append("\npriority: ")
                                     .append(priority)
                                     .append("\n\n");
-                        }}
-                        textViewData.setText(data.toString());
                     }
-        });
+                    if (queryDocumentSnapshots.size() > 0){
+                    data.append("_____________\n\n");
+                    textViewData.append(data);
 
+                    lastResult = queryDocumentSnapshots.getDocuments()
+                            .get(queryDocumentSnapshots.size() -1);
+                    }
+                    }
+                });
+
+
+        //for comparism loading
+//        Task task1 = notebookRef.whereLessThan("priority", 2)
+//                .orderBy("priority")
+//                .get();
+//        Task task2 = notebookRef.whereGreaterThan("priority", 2)
+//                .orderBy("priority")
+//                .get();
+//
+//        Task<List<QuerySnapshot>> allTasks = Tasks.whenAllSuccess(task1,task2);
+//        allTasks.addOnSuccessListener(new OnSuccessListener<List<QuerySnapshot>>() {
+//            @Override
+//            public void onSuccess(List<QuerySnapshot> querySnapshots) {
+//                StringBuilder data = new StringBuilder();
+//
+//                for (QuerySnapshot queryDocumentSnapshots: querySnapshots){
+//
+//                        for (QueryDocumentSnapshot documentSnapshot : queryDocumentSnapshots){
+//                            Note note = documentSnapshot.toObject(Note.class);
+//                            note.setDocumentId(documentSnapshot.getId());
+//
+//                            String documentId = note.getDocumentId();
+//                            String title = note.getTitle();
+//                            String description = note.getDescription();
+//                            int priority = note.getPriority();
+//
+//                            data.append("ID: ").append(documentId)
+//                                    .append("\nTitle: ").append(title)
+//                                    .append("\ndescription: ")
+//                                    .append(description)
+//                                    .append("\npriority: ")
+//                                    .append(priority)
+//                                    .append("\n\n");
+//                        }}
+//                        textViewData.setText(data.toString());
+//                    }
+//        });
+
+        //for ordering loading
 //        notebookRef.whereGreaterThanOrEqualTo("priority", 2)
 //                .orderBy("priority", Query.Direction.DESCENDING)
 //                .get()
@@ -228,6 +362,8 @@ public class MainActivity extends AppCompatActivity {
 //                        textViewData.setText(data.toString());
 //                    }
 //                });
+
+        //for loading single documents
 //        noteRef.get()
 //                .addOnSuccessListener(new OnSuccessListener<DocumentSnapshot>() {
 //                    @SuppressLint("SetTextI18n")
