@@ -1,6 +1,7 @@
 package com.sundaydavid.firestoreexampleproject;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.annotation.SuppressLint;
@@ -15,7 +16,10 @@ import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.EventListener;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.FirebaseFirestoreException;
+import com.google.firebase.firestore.ListenerRegistration;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -29,6 +33,7 @@ public class MainActivity extends AppCompatActivity {
     private EditText editTextTitle, editTextDescription;
     private TextView textViewData;
 
+    private ListenerRegistration noteListener;
     private FirebaseFirestore db = FirebaseFirestore.getInstance();
     private DocumentReference noteRef = db.document("Notebook/My first Note");
 
@@ -40,6 +45,35 @@ public class MainActivity extends AppCompatActivity {
         editTextTitle = findViewById(R.id.edit_text_title);
         editTextDescription = findViewById(R.id.edit_text_desc);
         textViewData = findViewById(R.id.text_view_data);
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+      noteListener =  noteRef.addSnapshotListener(new EventListener<DocumentSnapshot>() {
+            @SuppressLint("SetTextI18n")
+            @Override
+            public void onEvent(@Nullable DocumentSnapshot documentSnapshot,
+                                @Nullable FirebaseFirestoreException e) {
+                if (e != null){
+                    Toast.makeText(MainActivity.this, "error", Toast.LENGTH_SHORT).show();
+                    Log.d(TAG, e.toString());
+                    return;
+                }
+                if (documentSnapshot != null && documentSnapshot.exists()){
+                    String title = documentSnapshot.getString(KEY_TITLE);
+                    String description = documentSnapshot.getString(KEY_DESC);
+
+                    textViewData.setText("Title: " + title + "\n" + "Description: " + description );
+                }
+            }
+        });
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        noteListener.remove();
     }
 
     public void saveNote(View view) {
