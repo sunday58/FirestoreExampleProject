@@ -3,6 +3,7 @@ package com.sundaydavid.firestoreexampleproject;
 import com.google.firebase.firestore.Exclude;
 
 import java.util.List;
+import java.util.Map;
 
 public class Note {
     private String documentId;
@@ -10,16 +11,18 @@ public class Note {
     private String description;
     private int priority;
     List<String> tags;
+    Map<String, Boolean> tag;
 
     public Note(){
         //no-org constructor
     }
 
-    public Note(String title, String description, int priority, List<String> tags) {
+    public Note(String title, String description, int priority, List<String> tags, Map<String, Boolean> tag) {
         this.title = title;
         this.description = description;
         this.priority = priority;
         this.tags = tags;
+        this.tag = tag;
     }
 
     public String getTitle() {
@@ -57,5 +60,9 @@ public class Note {
 
     public List<String> getTags() {
         return tags;
+    }
+
+    public Map<String, Boolean> getTag() {
+        return tag;
     }
 }

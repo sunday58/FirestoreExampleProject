@@ -43,7 +43,7 @@ public class MainActivity extends AppCompatActivity {
     private static final String KEY_TITLE = "title";
     private static final String KEY_DESC = "description";
 
-    private EditText editTextTitle, editTextDescription, editTextPriority, editTextTags;
+    private EditText editTextTitle, editTextDescription, editTextPriority, editTextTags, editTextTag;
     private TextView textViewData;
 
     private ListenerRegistration noteListener;
@@ -63,6 +63,7 @@ public class MainActivity extends AppCompatActivity {
         textViewData = findViewById(R.id.text_view_data);
         editTextPriority = findViewById(R.id.edit_text_priority);
         editTextTags = findViewById(R.id.edit_text_tags);
+        editTextTag = findViewById(R.id.edit_text_tag);
 
         executableBatchedWrite();
 //        executeTransaction();
@@ -88,6 +89,11 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    private void updateNestedValue(){
+        notebookRef.document("VT0uTG9P8jNH5u6P2HFY")
+                .update("tag.tag1", false);
+    }
+
     private void executableBatchedWrite() {
 
         //updating and deleting documents using batch
@@ -111,6 +117,12 @@ public class MainActivity extends AppCompatActivity {
 
         //for transaction
 
+    }
+
+    private void updateArray(){
+        notebookRef.document("VT0uTG9P8jNH5u6P2HFY")
+//                .update("tags", FieldValue.arrayUnion())
+                .update("tags", FieldValue.arrayRemove("new tag"));
     }
 
     @Override
@@ -222,11 +234,22 @@ public class MainActivity extends AppCompatActivity {
     }
         int priority = Integer.parseInt(editTextPriority.getText().toString());
 
+        String tagValue = editTextTag.getText().toString();
+        String[] tagArrayValue = tagValue.split("\\s*, \\s*");
+        Map<String, Boolean> tag = new HashMap<>();
         String tagInput = editTextTags.getText().toString();
         String[] tagArray = tagInput.split("\\s*, \\s*");
         List<String> tags = Arrays.asList(tagArray);
 
-        Note note = new Note(title, description, priority, tags);
+
+        for (String tagNew : tagArrayValue) {
+            tag.put(tagNew, true);
+        }
+
+        Note note = new Note(title, description, priority, tags, tag);
+
+        notebookRef.document("VT0uTG9P8jNH5u6P2HFY")
+                .collection("Child Notes").add(note);
 
         notebookRef.add(note);
         editTextTitle.setText("");
@@ -257,51 +280,78 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void loadNotes(View view) {
-        Query query;
-        if (lastResult == null){
-            query = notebookRef.orderBy("priority")
-                    .limit(3);
-        }else {
-            query = notebookRef.orderBy("priority")
-                    .startAfter(lastResult)
-                    .limit(3);
-        }
 
-        //for pagination
-//        notebookRef.orderBy("priority")
-//                .startAt(3)
-               query.get()
+        notebookRef.get()
                 .addOnSuccessListener(new OnSuccessListener<QuerySnapshot>() {
                     @Override
                     public void onSuccess(QuerySnapshot queryDocumentSnapshots) {
-                        StringBuilder data = new StringBuilder();
+                        String data = "";
 
-                    for (QueryDocumentSnapshot documentSnapshot: queryDocumentSnapshots) {
-                        Note note = documentSnapshot.toObject(Note.class);
-                        note.setDocumentId(documentSnapshot.getId());
+                        for (QueryDocumentSnapshot documentSnapshot : queryDocumentSnapshots) {
+                            Note note = documentSnapshot.toObject(Note.class);
+                            note.setDocumentId(documentSnapshot.getId());
 
-                        String documentId = note.getDocumentId();
-                        String title = note.getTitle();
-                        String description = note.getDescription();
-                        int priority = note.getPriority();
+                            String documentId = note.getDocumentId();
 
-                        data.append("ID: ").append(documentId)
-                                    .append("\nTitle: ").append(title)
-                                    .append("\ndescription: ")
-                                    .append(description)
-                                    .append("\npriority: ")
-                                    .append(priority)
-                                    .append("\n\n");
-                    }
-                    if (queryDocumentSnapshots.size() > 0){
-                    data.append("_____________\n\n");
-                    textViewData.append(data);
+                            data += "ID: " + documentId;
 
-                    lastResult = queryDocumentSnapshots.getDocuments()
-                            .get(queryDocumentSnapshots.size() -1);
-                    }
+                            for (String tag : note.getTags()) {
+                                data += "\n-" + tag;
+                            }
+
+                            data += "\n\n";
+                        }
+                        textViewData.setText(data);
                     }
                 });
+
+
+
+//        Query query;
+//        if (lastResult == null){
+//            query = notebookRef.orderBy("priority")
+//                    .limit(3);
+//        }else {
+//            query = notebookRef.orderBy("priority")
+//                    .startAfter(lastResult)
+//                    .limit(3);
+//        }
+//
+//        //for pagination
+////        notebookRef.orderBy("priority")
+////                .startAt(3)
+//               query.get()
+//                .addOnSuccessListener(new OnSuccessListener<QuerySnapshot>() {
+//                    @Override
+//                    public void onSuccess(QuerySnapshot queryDocumentSnapshots) {
+//                        StringBuilder data = new StringBuilder();
+//
+//                    for (QueryDocumentSnapshot documentSnapshot: queryDocumentSnapshots) {
+//                        Note note = documentSnapshot.toObject(Note.class);
+//                        note.setDocumentId(documentSnapshot.getId());
+//
+//                        String documentId = note.getDocumentId();
+//                        String title = note.getTitle();
+//                        String description = note.getDescription();
+//                        int priority = note.getPriority();
+//
+//                        data.append("ID: ").append(documentId)
+//                                    .append("\nTitle: ").append(title)
+//                                    .append("\ndescription: ")
+//                                    .append(description)
+//                                    .append("\npriority: ")
+//                                    .append(priority)
+//                                    .append("\n\n");
+//                    }
+//                    if (queryDocumentSnapshots.size() > 0){
+//                    data.append("_____________\n\n");
+//                    textViewData.append(data);
+//
+//                    lastResult = queryDocumentSnapshots.getDocuments()
+//                            .get(queryDocumentSnapshots.size() -1);
+//                    }
+//                    }
+//                });
 
 
         //for comparism loading
